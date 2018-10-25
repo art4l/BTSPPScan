@@ -1,105 +1,102 @@
 package com.art4l.btsppscan;
 
 import android.Manifest;
-import android.bluetooth.BluetoothAdapter;
-import android.bluetooth.BluetoothDevice;
-import android.content.BroadcastReceiver;
-import android.content.Context;
+import android.annotation.SuppressLint;
 import android.content.Intent;
-import android.content.IntentFilter;
 import android.content.pm.PackageManager;
-import android.os.Handler;
-import android.os.Message;
-import android.os.RemoteException;
+import android.os.AsyncTask;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
-import android.util.Log;
-import android.view.View;
-import android.widget.ProgressBar;
-import android.widget.Toast;
+
+import com.art4l.btsppscan.api.ApiService;
+import com.art4l.btsppscan.api.NetworkModule;
+import com.art4l.btsppscan.api.model.DeviceInitializationDto;
+import com.art4l.btsppscan.config.DeviceConfig;
+import com.art4l.btsppscan.config.DeviceConfigHelper;
+import com.art4l.btsppscan.scanner.BTServer;
+import com.art4l.btsppscan.scanner.ColorCode;
+import com.art4l.btsppscan.scanner.ScannerMode;
+import com.art4l.btsppscan.socket.CamundaSocket;
+import com.art4l.btsppscan.socket.MqttCommand;
+import com.art4l.btsppscan.socket.MqttMessage;
+import com.art4l.btsppscan.socket.MqttSocket;
+import com.art4l.btsppscan.socket.SocketListener;
+
+import java.net.Socket;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
+
+import io.reactivex.android.schedulers.AndroidSchedulers;
+import io.reactivex.schedulers.Schedulers;
+import timber.log.Timber;
 
 public class MainActivity extends AppCompatActivity {
+    public final static int REQUEST_COARSE_LOCATION = 1;
+    public static MainActivity mInstance;
 
-    private static final String TAG = MainActivity.class.getSimpleName();
-
-
-    HoneywellBTScanner honeywellBTScanner;
 
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_main);
 
+        Timber.d("On Create");
+//        setContentView(R.layout.activity_main);
+        try {
+            Thread.sleep(10000);
+        } catch (InterruptedException ex){
 
-        ProgressBar progressBar = findViewById(R.id.progressBar);
-
-        honeywellBTScanner = new HoneywellBTScanner(this);
-        //IP Adress of Honeywell Scanner
-        //Use the setting: Pair with a Honeywell Mobile Computer in the manuals
-        String macAddress = "00:10:20:3E:CC:94";
-
-
-        honeywellBTScanner.initiateScanner(macAddress);
-
-
+        }
 
     }
+
+
 
     @Override
     protected void onResume() {
         super.onResume();
 
+        Timber.d("On Resume");
         //check if the permissions are set to find the BT devices, if not it is handled by onRequestPermissionsResult
-        if (honeywellBTScanner.checkLocationPermission()) honeywellBTScanner.startScanner();
+        if (checkLocationPermission()){
+            //start the scanners
+//            startScanners();
+        }
 
+        ScannerThread scannerThread = new ScannerThread(this);
+        scannerThread.init();
 
-        //catch the messages
-        honeywellBTScanner.setMessageListener(new HoneywellBTScanner.OnMessageReceived() {
-            @Override
-            public void messageReceived(String type, ScanResult message) {
-                Log.d(TAG, "Barcode Received: " + message.getBarcodeMessage());
-            }
-
-            @Override
-            public void errorReceived(String type, String errorMessage) {
-                Log.d(TAG,"Error Recieved: " + errorMessage);
-
-            }
-        });
-
-        //catch connectstatus
-        honeywellBTScanner.setConnectionListener(new HoneywellBTScanner.OnConnectionStatus() {
-            @Override
-            public void onConnected() {
-                ProgressBar progressBar = findViewById(R.id.progressBar);
-                progressBar.setVisibility(View.INVISIBLE);
-
-                //connected, send a command
-                honeywellBTScanner.sendCommand("PAPHHF!");  //command for manual trigger mode
-//                honeywellBTScanner.sendCommand("PAPSPE!");    //command for Streaming presentation mode, enhance; PAPSPN! for standard
-
-
-            }
-
-            @Override
-            public void onDisconnected(boolean isRetrying) {
-                ProgressBar progressBar = findViewById(R.id.progressBar);
-                progressBar.setVisibility(View.VISIBLE);
-
-
-            }
-        });
     }
 
     @Override
     public void onStop() {
         super.onStop();
 
-        honeywellBTScanner.stopScanner();
 
+    }
+
+    @Override
+    public void onDestroy(){
+        super.onDestroy();
+
+    }
+
+    /**
+     * Check if the permission is set to look for the BT Devices
+     *
+     * @return
+     */
+    public boolean checkLocationPermission() {
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+
+            ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.ACCESS_COARSE_LOCATION}, REQUEST_COARSE_LOCATION);
+            return false;
+        }
+        return true;
     }
 
 
@@ -110,13 +107,14 @@ public class MainActivity extends AppCompatActivity {
 
         switch (requestCode) {
 
-            case HoneywellBTScanner.REQUEST_COARSE_LOCATION: {
+            case REQUEST_COARSE_LOCATION: {
                 if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                    honeywellBTScanner.startScanner();
                     break;
                 }
             }
 
         }
     }
+
+
 }

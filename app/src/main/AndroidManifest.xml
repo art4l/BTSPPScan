@@ -5,6 +5,11 @@
     <uses-permission android:name="android.permission.BLUETOOTH"/>
     <uses-permission android:name="android.permission.BLUETOOTH_ADMIN"/>
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.WAKE_LOCK" />
+
 
 
     <application
@@ -13,18 +18,23 @@
         android:label="@string/app_name"
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
+        android:name=".BTSPPScan"
         android:theme="@style/AppTheme">
+
+        <uses-library android:name="com.google.android.things"/>
         <activity android:name=".MainActivity">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
-
+                <category android:name="android.intent.category.HOME"/>
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+        <service android:name="com.art4l.btsppscan.scanner.BTServer"/>
 
-        <service android:name=".BTServer">
+        <service android:name="org.eclipse.paho.android.service.MqttService"/>
+        <service android:name="com.art4l.btsppscan.ScannerThread"/>
 
-        </service>
+
 
     </application>
 
