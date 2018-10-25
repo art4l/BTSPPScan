@@ -1,6 +1,5 @@
-package com.art4l.btsppscan;
+package com.art4l.btsppscan.scandevice;
 
-import android.app.Activity;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
 import android.content.BroadcastReceiver;
@@ -9,9 +8,10 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.os.Handler;
 import android.os.Message;
-import android.os.RemoteException;
 import android.util.Log;
 
+import com.art4l.btsppscan.ScanResult;
+import com.art4l.btsppscan.ServiceManager;
 import com.art4l.btsppscan.scanner.BTServer;
 import com.art4l.btsppscan.scanner.BTServerAsync;
 
