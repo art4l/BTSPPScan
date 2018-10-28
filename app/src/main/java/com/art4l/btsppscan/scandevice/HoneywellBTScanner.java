@@ -17,6 +17,7 @@ import com.art4l.btsppscan.scanner.BTServerAsync;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
@@ -39,8 +40,6 @@ public class HoneywellBTScanner implements BTSPPScanner{
     private boolean isBTStarted = false;
     private BluetoothAdapter mBluetoothAdapter;
 
-    private List<ServiceManager> mBtServices = new ArrayList<>();
-
     private String mColorCode;
 
     private Handler mBTHandler;
@@ -49,6 +48,8 @@ public class HoneywellBTScanner implements BTSPPScanner{
     // return event
     private OnMessageReceived mMessageListener;
     private OnConnectionStatus mConnectionListener;
+
+    private BlockingQueue<Message> mBlockingQueue;
 
 
 
@@ -66,12 +67,16 @@ public class HoneywellBTScanner implements BTSPPScanner{
                 case BTServer.STATE_CONNECTED:
                     // show that scanner is connected
 
+                    break;
+                case BTServer.STATE_ACTIVE:
+                    //scanner is connected and active
                     bTRetryCounter = 0;        //reset retry counter
                     isBTStarted = true;
 
                     mConnectionListener.onConnected(mColorCode);
 
                     break;
+
                 case BTServer.STATE_BARCODE:                //scanned data returned
                     if (D) Log.d(TAG, "Barcode from BTServer received with Colorcode:" + mColorCode);
                     ScanResult scanResult = new ScanResult();
@@ -85,37 +90,28 @@ public class HoneywellBTScanner implements BTSPPScanner{
 
                     break;
                 case BTServer.STATE_NOBT:            //problem with BT COnnection
-                    Log.d(TAG, "No BT Connection, retry for ColorCode:" + mColorCode);
-                    mMessageListener.errorReceived("NOCONNECT", "Connection lost with scanner, retry to connect");
+ //                   Timber.d("No BT Connection, retry for ColorCode:" + mColorCode);
+                    isBTStarted = false;
 
                     bTRetryCounter++;
                     if (bTRetryCounter == MAXRETRY) {
                         if (D) Log.d(TAG, "Connection Lost with scanner");
-                        mMessageListener.errorReceived("NORETRY", "Connection lost with scanner, no retry");
 
-
-                        isBTStarted = false;
                         proceedDiscovery();
                         //go back into discovery mode
                         mConnectionListener.onDisconnected(mColorCode, false);
-
                         break;
 
                     }
-//                    try {
+                    if (mBlockingQueue !=null){
+                        Message message = new Message();
+                        message.obj = mColorCode;
+                        mBlockingQueue.add(message);
+
+                    } else {
                         mConnectionListener.onDisconnected(mColorCode, true);
 
-                        HoneywellBTScanner.this.stopScanner();
-
-
-                        Executors.newScheduledThreadPool(10).schedule(new Runnable() {
-                            @Override
-                            public void run() {
-                                Timber.d("Restart the service for colorcode: "+ mColorCode);
-                                HoneywellBTScanner.this.startScanner();
-                            }
-                        },2, TimeUnit.SECONDS);
-
+                    }
                     break;
 
 
@@ -141,39 +137,31 @@ public class HoneywellBTScanner implements BTSPPScanner{
         mMacAddress = macAddress;
         mColorCode = colorCode;
 
-        mBTHandler = new BTHandler();
 
-        // Register for broadcasts when a device is discovered
-        IntentFilter filter = new IntentFilter(BluetoothDevice.ACTION_FOUND);
-        mContext.registerReceiver(mReceiver, filter);
+
+
+        btService = new BTServerAsync();
+        mBTHandler = new BTHandler();
 
 
     }
 
+    @Override
     public void startScanner(){
         if (mMacAddress == null || mMacAddress.isEmpty()) return;
 
         // Register for broadcasts when a device is discovered
 
-        IntentFilter filter = new IntentFilter(BluetoothDevice.ACTION_FOUND);
-        mContext.registerReceiver(mReceiver, filter);
-        btService = new BTServerAsync();
-
-
         btService.onStartService(this,mMacAddress, mBTHandler);
 
     }
 
+    @Override
     public void stopScanner() {
         //       btService.stop();
         if (btService != null) btService.onStopService();
-        btService = null;
+//        btService = null;
 
-        try {
-            mContext.unregisterReceiver(mReceiver);
-        } catch (IllegalArgumentException ex){
-
-        }
     }
 
 
@@ -199,6 +187,31 @@ public class HoneywellBTScanner implements BTSPPScanner{
     }
 
     @Override
+    public void sendErrorBeep(){
+        sendCommand("PEPERR3");
+
+
+    }
+
+    @Override
+    public void setContinuousMode(){
+        sendCommand("PAPSPE!");
+
+
+    }
+
+    @Override
+    public void setSingleMode(){
+        sendCommand("PAPHHF!");
+
+    }
+
+    @Override
+    public void setBlockingQueue(BlockingQueue blockingQueue) {
+        mBlockingQueue = blockingQueue;
+    }
+
+    @Override
     public void setColorCode(String colorCode){
         mColorCode = colorCode;
     }
@@ -208,6 +221,15 @@ public class HoneywellBTScanner implements BTSPPScanner{
         return mColorCode;
     }
 
+    @Override
+    public String getMacAddress(){
+        return mMacAddress;
+    }
+
+    @Override
+    public boolean isStarted(){
+        return isBTStarted;
+    }
 
     /**
      * Send a command to the scanner
@@ -243,27 +265,6 @@ public class HoneywellBTScanner implements BTSPPScanner{
 */
     }
 
-    // The BroadcastReceiver that listens for discovered devices and
-    private final BroadcastReceiver mReceiver = new BroadcastReceiver() {
-        @Override
-        public void onReceive(Context context, Intent intent) {
-
-
-            String action = intent.getAction();
-            // When discovery finds a device
-            if (BluetoothDevice.ACTION_FOUND.equals(action)) {
-                // Get the BluetoothDevice object from the Intent
-                BluetoothDevice device = intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE);
-                if (D) Log.d(TAG, "BT Received: " + device.getName() + " " + device.getAddress()+ " "+ isBTStarted);
-                //check if this has the same address as the one expected and start service if is was not started yet.
-                if (device.getAddress().equalsIgnoreCase(mMacAddress) && !isBTStarted) {
-                    mBluetoothAdapter.cancelDiscovery();
-                    HoneywellBTScanner.this.startScanner();
-                }
-            }
-
-        }
-    };
 
 
 

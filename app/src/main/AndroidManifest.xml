@@ -19,9 +19,12 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:name=".BTSPPScan"
+        android:largeHeap="true"
         android:theme="@style/AppTheme">
 
         <uses-library android:name="com.google.android.things"/>
+
+
         <activity android:name=".MainActivity">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
@@ -32,8 +35,6 @@
         <service android:name="com.art4l.btsppscan.scanner.BTServer"/>
 
         <service android:name="org.eclipse.paho.android.service.MqttService"/>
-        <service android:name="com.art4l.btsppscan.ScannerThread"/>
-
 
 
     </application>

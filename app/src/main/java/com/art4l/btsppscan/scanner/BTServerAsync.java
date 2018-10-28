@@ -23,7 +23,7 @@ public class BTServerAsync  {
 
     // Debugging
     protected String TAG = "BTServerAsync";
-    protected static final boolean D =false;
+    protected static final boolean D = false;
 
 
     // Constants that indicate the current connection state
@@ -104,7 +104,6 @@ public class BTServerAsync  {
 
     private void send(Message message){
         mHandler.handleMessage(message);
-//        mBTSPPSscanner.handleMessage(message);
     }
 
     public void startBTServer(){
@@ -234,12 +233,19 @@ public class BTServerAsync  {
         }
 
         // Start the thread to manage the connection and perform transmissions
-        mConnectedThread = new ConnectedThread(device);
-        //check if there is a connection error
-        if (getState() != STATE_NOBT){
-            mConnectedThread.start();
-            setState(STATE_CONNECTED);
+        try {
+            mConnectedThread = new ConnectedThread(device);
+            //check if there is a connection error
+            if (getState() != STATE_NOBT) {
+                mConnectedThread.start();
+                setState(STATE_CONNECTED);
+            }
+        } catch (OutOfMemoryError error){
+            Log.d(TAG,error.getMessage());
+            System.exit(0);     //stop the application, it will restart automatically.
         }
+
+
     }
 
     /**
@@ -293,8 +299,6 @@ public class BTServerAsync  {
    	bluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
    	BluetoothDevice myDevice = null;
    	
-   	
-//   	bluetoothAdapter.cancelDiscovery();
    	
 	myDevice  = bluetoothAdapter.getRemoteDevice(macAddress);
 
@@ -382,8 +386,6 @@ public class BTServerAsync  {
             if (D) Log.i(TAG, "BEGIN mConnectThread");
             setName("ConnectThread");
 
-            // Always cancel discovery because it will slow down a connection
-//            if (mBluetoothAdapter.isDiscovering()) mBluetoothAdapter.cancelDiscovery();
 
             // Make a connection to the BluetoothSocket
             try {
@@ -440,13 +442,16 @@ public class BTServerAsync  {
         public ConnectedThread(BluetoothDevice device) {
             if (D) Log.d(TAG, "create ConnectedThread");
 
-
+            mmSocket = null;
             InputStream tmpIn = null;
             OutputStream tmpOut = null;
 
             // Get the BluetoothSocket input and output streams
 
             try {
+                // Always cancel discovery because it will slow down a connection
+                if (mBluetoothAdapter.isDiscovering()) mBluetoothAdapter.cancelDiscovery();
+
                 mmSocket = device.createInsecureRfcommSocketToServiceRecord(MY_UUID_SECURE);
                 if (D) Log.d(TAG, "Connected to " + mmSocket.getRemoteDevice().getName());
                 mmSocket.connect();
@@ -459,7 +464,10 @@ public class BTServerAsync  {
 				// TODO Auto-generated catch block
 
 				e.printStackTrace();
-			}
+			} catch (NullPointerException e){
+                if (D) Log.e(TAG, "Null pointer exception");
+
+            }
 
             mmInStream = tmpIn;
             mmOutStream = tmpOut;
@@ -473,6 +481,7 @@ public class BTServerAsync  {
             }
 
             if (D) Log.i(TAG, "BEGIN mConnectedThread");
+            setState(STATE_ACTIVE);
             byte[] buffer = new byte[1024];
             int bytes = 0;
 
@@ -507,6 +516,13 @@ public class BTServerAsync  {
                     connectionFailed();
                 	break;
                 }
+            }
+            try {
+                mmInStream.close();
+                mmOutStream.close();
+                mmSocket.close();
+            } catch(IOException e){
+
             }
         }
 

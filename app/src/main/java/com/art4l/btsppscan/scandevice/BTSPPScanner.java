@@ -5,6 +5,8 @@ import android.os.Message;
 import com.art4l.btsppscan.ScanResult;
 import com.art4l.btsppscan.scanner.ColorCode;
 
+import java.util.concurrent.BlockingQueue;
+
 public interface BTSPPScanner {
 
 
@@ -16,6 +18,13 @@ public interface BTSPPScanner {
     String getColorCode();
     void setMessageListener(OnMessageReceived messageListener);
     void setConnectionListener(OnConnectionStatus connectionListener);
+    void sendErrorBeep();
+    void setContinuousMode();
+    void setSingleMode();
+    void setBlockingQueue(BlockingQueue blockingQueue);
+    String getMacAddress();
+    boolean isStarted();
+
 
     /**
      *

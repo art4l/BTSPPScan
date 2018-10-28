@@ -27,7 +27,7 @@ public class MqttMessage {
     @Json(name= "scanToDevice")
     public String scanToDevice;
     @Json(name = "input")
-    public String input;
+    public Input input;
     @Json(name = "value")
     public String value;
     @Json(name = "scanmode")

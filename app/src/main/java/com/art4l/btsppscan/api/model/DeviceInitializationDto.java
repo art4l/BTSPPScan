@@ -7,8 +7,8 @@ public class DeviceInitializationDto {
     private String camundaFlow;
     private String deviceType;
     private String deviceId;
-    private String colorCode;
-    @ColorCode private String deviceScanto;
+    private String screenColorCode;
+    @ColorCode private String scanToDevice;
 
     public DeviceInitializationDto(){}
 
@@ -17,8 +17,8 @@ public class DeviceInitializationDto {
         this.camundaFlow = camundaFlow;
         this.deviceType = deviceType;
         this.deviceId = deviceId;
-        this.colorCode = colorCode;
-        this.deviceScanto = deviceScanTo;
+        this.screenColorCode = colorCode;
+        this.scanToDevice = deviceScanTo;
     }
 
     public String getLocationName() {
@@ -53,19 +53,19 @@ public class DeviceInitializationDto {
         this.deviceId = deviceId;
     }
 
-    public String getColorCode() {
-        return colorCode;
+    public String getScreenColorCode() {
+        return screenColorCode;
     }
 
-    public void setColorCode(@ColorCode String colorCode) {
-        this.colorCode = colorCode;
+    public void setScreenColorCode(@ColorCode String colorCode) {
+        this.screenColorCode = colorCode;
     }
 
-    public String getDeviceScanto() {
-        return deviceScanto;
+    public String getScanToDevice() {
+        return scanToDevice;
     }
 
-    public void setDeviceScanto(String deviceScanto) {
-        this.deviceScanto = deviceScanto;
+    public void setScanToDevice(String scanToDevice) {
+        this.scanToDevice = scanToDevice;
     }
 }
