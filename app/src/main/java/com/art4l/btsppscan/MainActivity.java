@@ -7,6 +7,7 @@ import android.content.pm.PackageManager;
 import android.os.AsyncTask;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
+import android.support.v4.content.PermissionChecker;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 
@@ -15,6 +16,7 @@ import com.art4l.btsppscan.api.NetworkModule;
 import com.art4l.btsppscan.api.model.DeviceInitializationDto;
 import com.art4l.btsppscan.config.DeviceConfig;
 import com.art4l.btsppscan.config.DeviceConfigHelper;
+import com.art4l.btsppscan.power.PowerManager;
 import com.art4l.btsppscan.scanner.BTServer;
 import com.art4l.btsppscan.scanner.ColorCode;
 import com.art4l.btsppscan.scanner.ScannerMode;
@@ -44,7 +46,12 @@ public class MainActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-        Timber.d("On Create");
+        boolean permission;
+
+        Intent launchIntent = getPackageManager().getLaunchIntentForPackage("com.art4l.visualpicking.dev.debug");
+        launchIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+        startActivity(launchIntent);
+
 //        setContentView(R.layout.activity_main);
         try {
             Thread.sleep(10000);
@@ -82,6 +89,12 @@ public class MainActivity extends AppCompatActivity {
     @Override
     public void onDestroy(){
         super.onDestroy();
+
+    }
+
+    public void reboot(){
+        PowerManager powerManager= new PowerManager();
+        powerManager.reboot(1);
 
     }
 

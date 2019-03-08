@@ -5,6 +5,7 @@ import android.content.Context;
 
 import com.art4l.btsppscan.config.DeviceConfig;
 import com.art4l.btsppscan.config.DeviceConfigHelper;
+import com.art4l.btsppscan.scanner.ColorCode;
 import com.squareup.moshi.Moshi;
 
 import org.eclipse.paho.android.service.MqttAndroidClient;
@@ -132,8 +133,8 @@ public class CamundaSocket implements MqttSocket, SocketListener {
      */
     private void subscribeTopics(String location, String camundaFlow, String deviceType, String deviceId) {
 
-        String[] topicFilters = new String[4];
-        int[] Qos = new int[4];
+        String[] topicFilters = new String[8];
+        int[] Qos = new int[8];
 
 
         topicFilters[0] = location;
@@ -142,8 +143,16 @@ public class CamundaSocket implements MqttSocket, SocketListener {
         Qos[1] = 2;
         topicFilters[2] = location + "/" + camundaFlow + "/device/" + deviceType;
         Qos[2] = 2;
-        topicFilters[3] = location + "/" + camundaFlow + "/device/" + deviceType + "/" + deviceId;
+        topicFilters[3] = location + "/" + camundaFlow + "/device/" + deviceType + "/" + deviceId +"_"+ ColorCode.RED;
         Qos[3] = 2;
+        topicFilters[4] = location + "/" + camundaFlow + "/device/" + deviceType + "/" + deviceId +"_"+ ColorCode.GREEN;
+        Qos[4] = 2;
+        topicFilters[5] = location + "/" + camundaFlow + "/device/" + deviceType + "/" + deviceId +"_"+ ColorCode.AMBER;
+        Qos[5] = 2;
+        topicFilters[6] = location + "/" + camundaFlow + "/device/" + deviceType + "/" + deviceId +"_"+ ColorCode.WHITE;
+        Qos[6] = 2;
+        topicFilters[7] = location + "/" + camundaFlow + "/device/" + deviceType + "/" + deviceId;
+        Qos[7] = 2;
 
 
         try {

@@ -148,7 +148,7 @@ public class BTServerAsync  {
      */
     public void write(byte[] out) {
 
-        if (mState == STATE_CONNECTED) {
+        if (mState == STATE_CONNECTED || mState == STATE_ACTIVE) {
 
             // Create temporary object
             ConnectedThread r;

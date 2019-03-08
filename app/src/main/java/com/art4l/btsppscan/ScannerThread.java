@@ -18,6 +18,7 @@ import com.art4l.btsppscan.api.NetworkModule;
 import com.art4l.btsppscan.api.model.DeviceInitializationDto;
 import com.art4l.btsppscan.config.DeviceConfig;
 import com.art4l.btsppscan.config.DeviceConfigHelper;
+import com.art4l.btsppscan.power.PowerManager;
 import com.art4l.btsppscan.scandevice.BTSPPScanner;
 import com.art4l.btsppscan.scandevice.HoneywellBTScanner;
 import com.art4l.btsppscan.scanner.ColorCode;
@@ -94,6 +95,31 @@ public class ScannerThread  implements BTSPPScanner.OnConnectionStatus, BTSPPSca
 
 
         mDeviceConfig = mDeviceConfigHelper.getDeviceConfigSync();
+/*
+        mDeviceConfig.scannerMacAddress_Color1 ="00:10:20:D5:4C:A3";
+        mDeviceConfig.scannerMacAddress_Color2 ="";
+        mDeviceConfig.scannerMacAddress_Color3 ="00:10:20:D7:A5:2C";
+        mDeviceConfig.scannerMacAddress_Color4 ="";
+        mDeviceConfig.scannerName1 ="HONEYWELL_8670";
+        mDeviceConfig.scannerName2 ="";
+        mDeviceConfig.scannerName3 ="HONEYWELL_8670";
+        mDeviceConfig.scannerName4 ="";
+        mDeviceConfig.color1="RED";
+        mDeviceConfig.color2="GREEN";
+        mDeviceConfig.color3="AMBER";
+        mDeviceConfig.color4="WHITE";
+
+        mDeviceConfig.mqqtPort="1883";
+        mDeviceConfig.mqttHost="10.236.84.24";
+        mDeviceConfig.deviceId="ap_01";
+        mDeviceConfig.deviceType="scanner";
+        mDeviceConfig.deviceScanTo="projector/raspi_01";
+        mDeviceConfig.location="venray";
+        mDeviceConfig.camundaFlow="venray_sorting";
+        mDeviceConfig.flowengineIp="https://art4l-poc.logistics.corp";
+
+*/
+
         mApiService = NetworkModule.ProvideProjectorService(mDeviceConfig.flowengineIp);
 
         //initialize the MQTT Connection, make sure network is up & running
@@ -136,6 +162,8 @@ public class ScannerThread  implements BTSPPScanner.OnConnectionStatus, BTSPPSca
 
     }
 
+
+
     /**
      *
      * Check if there is a network connection
@@ -163,6 +191,17 @@ public class ScannerThread  implements BTSPPScanner.OnConnectionStatus, BTSPPSca
 
     @Override
     public void messageReceived(String colorCode, ScanResult message) {
+
+        //setting messages
+        if (message.getBarcodeMessage().startsWith("BELB"))  return;
+        if (message.getBarcodeMessage().startsWith("PAP")) return;
+
+        if (message.getBarcodeMessage().startsWith("@REBOOT")){
+
+            stop();
+            ((MainActivity)mContext).reboot();
+            return;
+        }
 
         // if not initialized yet, no message received.
         if (getCamundaFlow(colorCode) == null) return;
@@ -204,7 +243,6 @@ public class ScannerThread  implements BTSPPScanner.OnConnectionStatus, BTSPPSca
     @Override
     public void onConnected(String colorCode) {
         Timber.d("Device connected: " + colorCode);
-
         // now do the REST Call for that device.
         mConnectedDevices++;
 
@@ -213,7 +251,7 @@ public class ScannerThread  implements BTSPPScanner.OnConnectionStatus, BTSPPSca
         initializationDto.setLocationName(mDeviceConfig.location);
         initializationDto.setCamundaFlow(mDeviceConfig.camundaFlow);
         initializationDto.setDeviceType(mDeviceConfig.deviceType);
-        initializationDto.setDeviceId(mDeviceConfig.deviceId);
+        initializationDto.setDeviceId(mDeviceConfig.deviceId+"_" + colorCode);
         initializationDto.setScanToDevice(mDeviceConfig.deviceScanTo);
         initializationDto.setScreenColorCode(colorCode);
 
@@ -237,8 +275,9 @@ public class ScannerThread  implements BTSPPScanner.OnConnectionStatus, BTSPPSca
                     //disconnect device
 
                     BTSPPScanner btsppScanner = getScanner(colorCode);
+                    btsppScanner.sendErrorBeep();
                     //TODO REMOVE FOR PRODUCTION RELEASE
-                    //btsppScanner.stopScanner();
+//                    btsppScanner.stopScanner();
 
                 });
     }
@@ -247,6 +286,7 @@ public class ScannerThread  implements BTSPPScanner.OnConnectionStatus, BTSPPSca
     public void onDisconnected(String colorCode, boolean isRetrying) {
 
         mConnectedDevices--;
+        if (mConnectedDevices < 0 ) mConnectedDevices = 0;
 
         BTSPPScanner btsppScanner = getScanner(colorCode);
 
@@ -261,6 +301,11 @@ public class ScannerThread  implements BTSPPScanner.OnConnectionStatus, BTSPPSca
      */
     @Override
     public void onMessage(MqttMessage message) {
+
+
+        //check first if this a keep alive message
+        if (!message.command.equals(MqttCommand.INITIALIZE) && !message.command.equals(MqttCommand.SET_SCANNER_MODE)) return;
+
         // store the last process & spanId
         boolean newCamundaFlow = false;
         CamundaFlow camundaFlow = getCamundaFlow(message.screenColorCode);
@@ -429,7 +474,7 @@ public class ScannerThread  implements BTSPPScanner.OnConnectionStatus, BTSPPSca
             if (BluetoothDevice.ACTION_FOUND.equals(action)) {
                 // Get the BluetoothDevice object from the Intent
                 BluetoothDevice device = intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE);
-                Timber.d("Scanned devices: %s, Mac: %s",device.getName(),device.getAddress());
+                Timber.e("Scanned devices: %s, Mac: %s",device.getName(),device.getAddress());
 
                 ScannerThread.this.startScanners(device.getAddress());
             }

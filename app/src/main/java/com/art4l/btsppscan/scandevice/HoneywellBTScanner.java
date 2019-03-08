@@ -188,10 +188,16 @@ public class HoneywellBTScanner implements BTSPPScanner{
 
     @Override
     public void sendErrorBeep(){
-        sendCommand("PEPERR3");
 
+        sendCommand("BELBEP1!");    //enable beep on BEL char
+        byte[] bel = new byte[]{7};
+        sendBytes(bel);
+        sendBytes(bel);
+        sendBytes(bel);
 
     }
+
+
 
     @Override
     public void setContinuousMode(){
@@ -231,13 +237,27 @@ public class HoneywellBTScanner implements BTSPPScanner{
         return isBTStarted;
     }
 
+
+    /**
+     * Send bytes to the scanner
+     *
+     */
+
+    public void sendBytes(byte[] bytes){
+
+
+
+        btService.write(bytes);
+    }
+
+
     /**
      * Send a command to the scanner
      *
      * @param command
      */
 
-    public void sendCommand(String command){
+    public void sendCommand(String command) {
 
         byte[] bCommand = command.getBytes();
         byte[] writeOut = new byte[1008];
@@ -257,13 +277,11 @@ public class HoneywellBTScanner implements BTSPPScanner{
         }
 
         btService.write(writeOut);
-/*
-        try {
-            btService.send(Message.obtain(null, BTServer.WRITE_SETTING,new String(writeOut)));
-        }catch(RemoteException ex) {
-        }
-*/
+
+
     }
+
+
 
 
 
